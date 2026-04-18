@@ -2,12 +2,13 @@
 
 // TODO: Replace this object with your actual Firebase project configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAcMZEEOykAZlGJuTMKXeit2xLABithTGE",
+  authDomain: "internship-portal-eff9e.firebaseapp.com",
+  projectId: "internship-portal-eff9e",
+  storageBucket: "internship-portal-eff9e.firebasestorage.app",
+  messagingSenderId: "497307402315",
+  appId: "1:497307402315:web:84ea68cb31f2f73cf88dce",
+  measurementId: "G-37HJJJFJQ5"
 };
 
 // Initialize Firebase
