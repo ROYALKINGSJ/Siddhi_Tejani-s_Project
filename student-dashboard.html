@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <h2>Student Dashboard</h2>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="dashboard-content">
+        <div class="card">
+            <h3>Available Internships</h3>
+            <p>Browse and apply for opportunities.</p>
+            <button>View Internships</button>
+        </div>
+        <div class="card">
+            <h3>My Tasks</h3>
+            <p>Upload your task files here.</p>
+            <input type="file" id="taskFile">
+            <button onclick="uploadTask()">Submit Work</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script>
+        function logout() {
+            firebase.auth().signOut().then(() => window.location.href = "index.html");
+        }
+        
+        function uploadTask() {
+            alert("Firebase Storage feature will go here! Make sure to set up Firebase Storage rules.");
+        }
+    </script>
+</body>
+</html>

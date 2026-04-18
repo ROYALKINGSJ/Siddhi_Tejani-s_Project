@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internship Management Portal</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Cloud-Based Internship Portal</h2>
+        
+        <div id="auth-container">
+            <h3 id="form-title">Login</h3>
+            
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="password" id="password" placeholder="Password" required>
+            
+            <!-- Only shown during registration -->
+            <select id="role-select" style="display: none;">
+                <option value="student">Student</option>
+                <option value="admin">Admin</option>
+            </select>
+
+            <button id="auth-btn" onclick="handleAuth()">Login</button>
+            
+            <p class="toggle-text" onclick="toggleForm()">
+                Don't have an account? <b>Register here</b>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
