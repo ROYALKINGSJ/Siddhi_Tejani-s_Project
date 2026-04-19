@@ -47,8 +47,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'internship_tasks', // It will create this folder in your Cloudinary account
-        allowed_formats: ['jpg', 'png', 'pdf', 'docx']
+        folder: 'internship_tasks', 
+        allowed_formats: ['jpg', 'png', 'pdf', 'docx'],
+        resource_type: 'auto' // <--- ADD THIS EXACT LINE
     }
 });
 
