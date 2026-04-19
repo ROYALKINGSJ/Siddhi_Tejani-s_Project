@@ -96,7 +96,7 @@
             listContainer.innerHTML = '<p>Loading applicants...</p>';
 
             try {
-                const response = await fetch('http://localhost:3000/api/applications/admin', {
+                const response = await fetch('https://siddhi-tejani-s-project.onrender.com/api/applications/admin', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -167,7 +167,7 @@
             const token = localStorage.getItem('token');
             
             try {
-                const response = await fetch('http://localhost:3000/api/internships', {
+                const response = await fetch('https://siddhi-tejani-s-project.onrender.com/api/internships', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -188,7 +188,7 @@
         async function updateStatus(appId, newStatus) {
             const token = localStorage.getItem('token');
             try {
-                const response = await fetch(`http://localhost:3000/api/applications/${appId}`, {
+                const response = await fetch(`https://siddhi-tejani-s-project.onrender.com/api/applications/${appId}`, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -215,7 +215,7 @@
             }
 
             try {
-                const response = await fetch(`http://localhost:3000/api/evaluate/${appId}`, {
+                const response = await fetch(`https://siddhi-tejani-s-project.onrender.com/api/evaluate/${appId}`, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',

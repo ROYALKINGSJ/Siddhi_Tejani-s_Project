@@ -22,7 +22,7 @@ async function handleAuth() {
     if (isLogin) {
         // --- LOGIN LOGIC ---
         try {
-            const response = await fetch('http://localhost:3000/login', {
+            const response = await fetch('https://siddhi-tejani-s-project.onrender.com/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -56,7 +56,7 @@ async function handleAuth() {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/register', {
+            const response = await fetch('https://siddhi-tejani-s-project.onrender.com/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password, role })
