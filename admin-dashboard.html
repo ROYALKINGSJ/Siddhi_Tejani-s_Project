@@ -4,8 +4,25 @@
     <meta charset="UTF-8">
     <title>Admin Panel</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Chart.js for the Analytics Feature mentioned in the PDF -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .hidden { display: none !important; }
+        
+        .dashboard-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .dashboard-nav button { background-color: #888; margin: 0; width: auto; padding: 10px 20px; }
+        .dashboard-nav button:hover { background-color: #666; }
+        
+        .applicant-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .action-btns button { width: auto; padding: 5px 10px; margin-left: 5px; font-size: 12px; cursor: pointer; color: white; border: none; border-radius: 4px;}
+        .btn-accept { background-color: #28a745; }
+        .btn-accept:hover { background-color: #218838; }
+        .btn-reject { background-color: #dc3545; }
+        .btn-reject:hover { background-color: #c82333; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .status-pending { background-color: #ffc107; color: #333; }
+        .status-accepted { background-color: #28a745; color: white; }
+        .status-rejected { background-color: #dc3545; color: white; }
+    </style>
 </head>
 <body>
     <div class="navbar">
@@ -13,39 +30,170 @@
         <button onclick="logout()">Logout</button>
     </div>
 
-    <div class="dashboard-content">
-        <div class="card">
-            <h3>Post Internship</h3>
-            <input type="text" placeholder="Internship Title">
-            <button>Post Opportunity</button>
-        </div>
+    <div class="container" style="max-width: 1000px; margin-top: 40px; text-align: left;">
         
-        <!-- The "Extra Feature" from your PDF -->
-        <div class="card" style="grid-column: span 2;">
-            <h3>Progress Analytics (Extra Feature)</h3>
+        <div class="dashboard-nav">
+            <button onclick="switchView('post-job-view')">Post Internship</button>
+            <button onclick="switchView('manage-applicants-view')">Manage Applicants</button>
+            <button onclick="switchView('analytics-view')">Progress Analytics</button>
+        </div>
+
+        <div id="post-job-view" class="card">
+            <h3>Post a New Internship</h3>
+            <p>Create a new opportunity for students to apply.</p>
+            <input type="text" id="job-title" placeholder="Internship Title (e.g., Backend Developer)">
+            <select id="job-language">
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="c">C</option>
+                <option value="sql">SQL</option>
+            </select>
+            <select id="job-level">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+            </select>
+            <button onclick="postJob()">Publish Opportunity</button>
+        </div>
+
+        <div id="manage-applicants-view" class="card hidden">
+            <h3>Review Applicants</h3>
+            <p>Compare candidates and accept or reject applications.</p>
+            
+            <div id="applicants-list" style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-top: 15px;">
+                <p>Loading applicants...</p>
+            </div>
+        </div>
+
+        <div id="analytics-view" class="card hidden">
+            <h3>System Analytics</h3>
+            <p>Track overall task completion across all internships.</p>
             <canvas id="progressChart" width="400" height="150"></canvas>
         </div>
+
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="js/firebase-config.js"></script>
     <script>
         function logout() {
-            firebase.auth().signOut().then(() => window.location.href = "index.html");
+            localStorage.removeItem('token');
+            window.location.href = "index.html";
         }
 
-        // Analytics Chart (From PDF requirements)
+        function switchView(viewId) {
+            document.getElementById('post-job-view').classList.add('hidden');
+            document.getElementById('manage-applicants-view').classList.add('hidden');
+            document.getElementById('analytics-view').classList.add('hidden');
+            
+            document.getElementById(viewId).classList.remove('hidden');
+
+            // Fetch live applicant data when the admin opens this view
+            if (viewId === 'manage-applicants-view') {
+                fetchApplicants();
+            }
+        }
+
+        // --- FETCH APPLICANTS FROM BACKEND ---
+        async function fetchApplicants() {
+            const token = localStorage.getItem('token');
+            const listContainer = document.getElementById('applicants-list');
+            listContainer.innerHTML = '<p>Loading applicants...</p>';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/applications/admin', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    listContainer.innerHTML = '';
+                    if (data.length === 0) {
+                        listContainer.innerHTML = '<p>No applications found yet.</p>';
+                        return;
+                    }
+
+                    data.forEach(app => {
+                        // Create visual badges for status
+                        let statusClass = 'status-pending';
+                        if (app.status === 'accepted') statusClass = 'status-accepted';
+                        if (app.status === 'rejected') statusClass = 'status-rejected';
+
+                        const html = `
+                            <div class="applicant-row">
+                                <div>
+                                    <strong>${app.student_name}</strong> - <em>${app.internship_title}</em> 
+                                    <span class="status-badge ${statusClass}" style="margin-left: 10px;">${app.status}</span><br>
+                                    <span style="font-size: 13px; color: #666;">Req: ${app.language_req} | Level: ${app.experience_level}</span>
+                                </div>
+                                <div class="action-btns">
+                                    <button class="btn-accept" onclick="updateStatus(${app.application_id}, 'accepted')">Accept</button>
+                                    <button class="btn-reject" onclick="updateStatus(${app.application_id}, 'rejected')">Reject</button>
+                                </div>
+                            </div>
+                        `;
+                        listContainer.innerHTML += html;
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                listContainer.innerHTML = '<p style="color: red;">Failed to load data.</p>';
+            }
+        }
+
+        async function postJob() {
+            const title = document.getElementById('job-title').value;
+            const language_req = document.getElementById('job-language').value;
+            const experience_level = document.getElementById('job-level').value;
+            const token = localStorage.getItem('token');
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/internships', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ title, language_req, experience_level })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("Success: " + data.message);
+                    document.getElementById('job-title').value = '';
+                } else alert("Error: " + data.error);
+            } catch (error) {
+                alert("Could not connect to server.");
+            }
+        }
+
+        // --- UPDATE APPLICATION STATUS ---
+        async function updateStatus(appId, newStatus) {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`http://localhost:3000/api/applications/${appId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    // Refresh the list to show the new status badge
+                    fetchApplicants(); 
+                } else {
+                    alert("Failed to update status.");
+                }
+            } catch (error) {
+                alert("Could not connect to server.");
+            }
+        }
+
+        // Chart.js
         const ctx = document.getElementById('progressChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels:['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                datasets:[{
-                    label: 'Tasks Completed',
-                    data: [12, 19, 25, 43],
-                    backgroundColor: '#4e73df'
-                }]
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{ label: 'Tasks Completed', data: [12, 19, 25, 43], backgroundColor: '#4e73df' }]
             }
         });
     </script>

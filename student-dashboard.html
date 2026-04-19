@@ -38,7 +38,7 @@
         <div class="card">
             <h3>My Applications</h3>
             <p>Track your submitted internships, status, and feedback.</p>
-            <ul style="text-align: left; padding-left: 20px; color: #555;">
+            <ul id="applications-list" style="text-align: left; padding-left: 20px; color: #555;">
                 <li>Backend Dev Intern - <b>In Review</b></li>
                 <li>Database Admin - <b>Selected</b> (Feedback: Good SQL skills)</li>
             </ul>
@@ -91,12 +91,11 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="js/firebase-config.js"></script>
     <script>
         function logout() {
-            firebase.auth().signOut().then(() => window.location.href = "index.html");
+            // Clear the security token
+            localStorage.removeItem('token');
+            window.location.href = "index.html";
         }
         
         function uploadTask() {
@@ -109,14 +108,100 @@
             document.getElementById('search-view').classList.add('hidden');
             
             document.getElementById(viewId).classList.remove('hidden');
+
+            // Fetch the internships from the database when opening the search view
+            if (viewId === 'search-view') {
+                fetchInternships();
+            }
         }
 
-        // Mock function for when the user clicks 'Search'
+        // Fetch Internships from the Node.js Backend
+        async function fetchInternships() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("You are not logged in!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            const resultsContainer = document.getElementById('internship-results');
+            resultsContainer.innerHTML = '<p>Loading internships...</p>'; // Show loading state
+
+            try {
+                const response = await fetch('http://localhost:3000/api/internships', {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}` 
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultsContainer.innerHTML = ''; // Clear the loading text
+
+                    if (data.length === 0) {
+                        resultsContainer.innerHTML = '<p>No internships currently available.</p>';
+                        return;
+                    }
+
+                    // Loop through the data and create a visual card for each job
+                    data.forEach(job => {
+                        const jobCard = `
+                            <div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; text-align: left;">
+                                <h4 style="margin: 0 0 5px 0;">${job.title}</h4>
+                                <p style="font-size: 13px; color: #555; margin-bottom: 10px;">
+                                    <strong>Language:</strong> <span style="text-transform: capitalize;">${job.language_req}</span> | 
+                                    <strong>Level:</strong> <span style="text-transform: capitalize;">${job.experience_level}</span>
+                                </p>
+                                <button onclick="applyForJob(${job.id})" style="width: auto; padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Apply Now</button>
+                            </div>
+                        `;
+                        resultsContainer.innerHTML += jobCard; // Add the card to the screen
+                    });
+                } else {
+                    resultsContainer.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                resultsContainer.innerHTML = '<p style="color: red;">Could not connect to the server.</p>';
+            }
+        }
+
+        // --- UPDATED: Handle the Apply button click ---
+        async function applyForJob(jobId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("You are not logged in!");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/applications', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ internship_id: jobId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("Success: " + data.message);
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Could not connect to the server.");
+            }
+        }
+
+        // Filtering logic placeholder 
         function applyFilters() {
-            const lang = document.getElementById('language-filter').value;
-            const exp = document.getElementById('experience-filter').value;
-            alert(`Filtering database for: Language=${lang}, Experience=${exp}`);
-            // Later, you will query your MySQL/Node backend here and inject the HTML results
+            alert("Filtering functionality will be added soon!");
         }
     </script>
 </body>
