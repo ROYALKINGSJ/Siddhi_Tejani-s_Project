@@ -7,6 +7,10 @@ const cors = require('cors');
 
 const app = express();
 
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+
 // Middleware
 app.use(cors()); // Allows your frontend to make requests to this backend
 app.use(express.json()); // Allows the server to read JSON data sent from the frontend
@@ -26,6 +30,23 @@ db.connect((err) => {
     }
     console.log('Successfully connected to the local MySQL database!');
 });
+
+// --- CLOUDINARY CONFIGURATION ---
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'internship_tasks', // It will create this folder in your Cloudinary account
+        allowed_formats: ['jpg', 'png', 'pdf', 'docx']
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // 2. Registration Endpoint
 app.post('/register', async (req, res) => {
@@ -194,6 +215,39 @@ app.put('/api/applications/:id', authenticateToken, (req, res) => {
     db.query(query, [status, applicationId], (err, result) => {
         if (err) return res.status(500).json({ error: 'Database error' });
         res.json({ message: `Application ${status} successfully.` });
+    });
+});
+
+// --- 9. UPLOAD TASK FILE (Student Only) ---
+// Note: "upload.single('taskFile')" tells multer to look for a file named 'taskFile'
+app.post('/api/upload-task', authenticateToken, upload.single('taskFile'), (req, res) => {
+    if (req.user.role !== 'student') {
+        return res.status(403).json({ error: 'Only students can upload tasks.' });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file was uploaded.' });
+    }
+
+    const fileUrl = req.file.path; // Cloudinary generates this secure URL for us!
+    const studentId = req.user.id;
+
+    // We will attach this file to the student's most recently accepted application
+    const query = `
+        UPDATE applications 
+        SET task_file_url = ? 
+        WHERE student_id = ? AND status = 'accepted' 
+        ORDER BY applied_at DESC LIMIT 1
+    `;
+
+    db.query(query, [fileUrl, studentId], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        
+        if (result.affectedRows === 0) {
+            return res.status(400).json({ error: 'You need an accepted application before uploading a task.' });
+        }
+        
+        res.json({ message: 'File uploaded successfully!', url: fileUrl });
     });
 });
 

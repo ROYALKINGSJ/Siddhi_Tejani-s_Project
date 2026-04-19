@@ -98,8 +98,59 @@
             window.location.href = "index.html";
         }
         
-        function uploadTask() {
-            alert("File upload system will be connected here!");
+        // --- UPLOAD TASK FILE ---
+        async function uploadTask() {
+            const fileInput = document.getElementById('taskFile');
+            const file = fileInput.files[0];
+            const token = localStorage.getItem('token');
+
+            if (!file) {
+                alert("Please select a file first.");
+                return;
+            }
+            if (!token) {
+                alert("You are not logged in!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            // We use FormData to package files for sending over HTTP
+            const formData = new FormData();
+            formData.append('taskFile', file);
+
+            try {
+                // Change button text to show it's working
+                const btn = document.querySelector('button[onclick="uploadTask()"]');
+                btn.innerText = "Uploading...";
+                btn.disabled = true;
+
+                const response = await fetch('http://localhost:3000/api/upload-task', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                        // Note: We deliberately DO NOT set 'Content-Type' here. 
+                        // The browser automatically sets it correctly for FormData!
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("Success! Your file was uploaded. \nCloudinary Link: " + data.url);
+                    fileInput.value = ''; // Clear the input
+                } else {
+                    alert("Error: " + data.error);
+                }
+
+                // Reset button
+                btn.innerText = "Submit Work";
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Could not connect to the server.");
+            }
         }
 
         // Toggles between the main dashboard and the search view
