@@ -39,10 +39,9 @@
             <h3>My Applications</h3>
             <p>Track your submitted internships, status, and feedback.</p>
             <ul id="applications-list" style="text-align: left; padding-left: 20px; color: #555;">
-                <li>Backend Dev Intern - <b>In Review</b></li>
-                <li>Database Admin - <b>Selected</b> (Feedback: Good SQL skills)</li>
+                <li>Loading your applications...</li>
             </ul>
-            <button>View Full History</button>
+            <button onclick="loadMyApplications()">Refresh History</button>
         </div>
 
         <div class="card">
@@ -97,6 +96,60 @@
             localStorage.removeItem('token');
             window.location.href = "index.html";
         }
+
+        // --- FETCH STUDENT'S OWN APPLICATIONS & GRADES ---
+        async function loadMyApplications() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const listElement = document.getElementById('applications-list');
+            listElement.innerHTML = '<li>Loading your applications...</li>';
+
+            try {
+                const response = await fetch('https://siddhi-tejani-s-project.onrender.com/api/applications/student', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const applications = await response.json();
+                listElement.innerHTML = ''; // Clear out the loading text
+
+                if (!response.ok) {
+                    listElement.innerHTML = `<li style="color: red;">Error: ${applications.error || 'Could not load applications'}</li>`;
+                    return;
+                }
+
+                if (applications.length === 0) {
+                    listElement.innerHTML = '<li>You haven\'t applied to any internships yet.</li>';
+                    return;
+                }
+
+                // Loop through the database results and build the HTML
+                applications.forEach(app => {
+                    let feedbackText = '';
+                    
+                    // If the admin has graded it, show the marks and feedback
+                    if (app.marks || app.feedback) {
+                        feedbackText = `<br><span style="color: gray; font-size: 0.9em;">
+                            <strong>Grade:</strong> ${app.marks || 'N/A'} | <strong>Feedback:</strong> ${app.feedback || 'None'}
+                        </span>`;
+                    }
+
+                    listElement.innerHTML += `
+                        <li style="margin-bottom: 10px;">
+                            <strong>${app.internship_title}</strong> - 
+                            <span style="text-transform: capitalize; font-weight: bold;">${app.status}</span>
+                            ${feedbackText}
+                        </li>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error loading applications:", error);
+                listElement.innerHTML = '<li style="color: red;">Could not connect to the server to load applications.</li>';
+            }
+        }
+
+        // Trigger the load automatically when the page opens!
+        window.onload = loadMyApplications;
         
         // --- UPLOAD TASK FILE ---
         async function uploadTask() {
@@ -219,7 +272,7 @@
             }
         }
 
-        // --- UPDATED: Handle the Apply button click ---
+        // Handle the Apply button click
         async function applyForJob(jobId) {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -241,6 +294,8 @@
 
                 if (response.ok) {
                     alert("Success: " + data.message);
+                    // Automatically refresh the applications list so the new pending job shows up immediately!
+                    loadMyApplications();
                 } else {
                     alert("Error: " + data.error);
                 }

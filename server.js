@@ -273,6 +273,33 @@ app.put('/api/evaluate/:id', authenticateToken, (req, res) => {
     });
 });
 
+// --- 11. GET STUDENT'S APPLICATIONS (Student Only) ---
+app.get('/api/applications/student', authenticateToken, (req, res) => {
+    // Security check: Only students can fetch their own history
+    if (req.user.role !== 'student') {
+        return res.status(403).json({ error: 'Only students can view their applications.' });
+    }
+
+    const studentId = req.user.id;
+
+    // Join the applications and internships tables to get the titles and grades
+    const query = `
+        SELECT a.id, i.title as internship_title, a.status, a.marks, a.feedback 
+        FROM applications a
+        JOIN internships i ON a.internship_id = i.id
+        WHERE a.student_id = ?
+        ORDER BY a.applied_at DESC
+    `;
+
+    db.query(query, [studentId], (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        res.json(results);
+    });
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
