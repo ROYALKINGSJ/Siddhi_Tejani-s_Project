@@ -15,12 +15,18 @@ const cloudinary = require('cloudinary').v2;
 app.use(cors()); // Allows your frontend to make requests to this backend
 app.use(express.json()); // Allows the server to read JSON data sent from the frontend
 
-// 1. Connect to Local MySQL Database
+// 1. Connect to TiDB Cloud Database (Securely)
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+    // This 'ssl' object is the missing piece that fixes your error!
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+    }
 });
 
 db.connect((err) => {
@@ -185,7 +191,7 @@ app.get('/api/applications/admin', authenticateToken, (req, res) => {
     // SQL Magic: Join 3 tables to get the Student Name, Job Title, and Application Status
     const query = `
         SELECT a.id as application_id, u.name as student_name, i.title as internship_title, 
-               i.language_req, i.experience_level, a.status 
+               i.language_req, i.experience_level, a.status, a.task_file_url, a.marks, a.feedback
         FROM applications a 
         JOIN users u ON a.student_id = u.id 
         JOIN internships i ON a.internship_id = i.id 
@@ -219,7 +225,6 @@ app.put('/api/applications/:id', authenticateToken, (req, res) => {
 });
 
 // --- 9. UPLOAD TASK FILE (Student Only) ---
-// Note: "upload.single('taskFile')" tells multer to look for a file named 'taskFile'
 app.post('/api/upload-task', authenticateToken, upload.single('taskFile'), (req, res) => {
     if (req.user.role !== 'student') {
         return res.status(403).json({ error: 'Only students can upload tasks.' });
@@ -248,6 +253,22 @@ app.post('/api/upload-task', authenticateToken, upload.single('taskFile'), (req,
         }
         
         res.json({ message: 'File uploaded successfully!', url: fileUrl });
+    });
+});
+
+// --- 10. EVALUATE SUBMISSION (Admin Only) ---
+app.put('/api/evaluate/:id', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Only admins can evaluate tasks.' });
+    }
+
+    const { marks, feedback } = req.body;
+    const applicationId = req.params.id;
+
+    const query = 'UPDATE applications SET marks = ?, feedback = ? WHERE id = ?';
+    db.query(query, [marks, feedback, applicationId], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json({ message: 'Evaluation saved successfully!' });
     });
 });
 

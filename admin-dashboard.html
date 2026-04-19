@@ -85,13 +85,11 @@
             
             document.getElementById(viewId).classList.remove('hidden');
 
-            // Fetch live applicant data when the admin opens this view
             if (viewId === 'manage-applicants-view') {
                 fetchApplicants();
             }
         }
 
-        // --- FETCH APPLICANTS FROM BACKEND ---
         async function fetchApplicants() {
             const token = localStorage.getItem('token');
             const listContainer = document.getElementById('applicants-list');
@@ -111,10 +109,35 @@
                     }
 
                     data.forEach(app => {
-                        // Create visual badges for status
                         let statusClass = 'status-pending';
                         if (app.status === 'accepted') statusClass = 'status-accepted';
                         if (app.status === 'rejected') statusClass = 'status-rejected';
+
+                        let actionHTML = '';
+
+                        if (app.status === 'pending') {
+                            actionHTML = `
+                                <button class="btn-accept" onclick="updateStatus(${app.application_id}, 'accepted')">Accept</button>
+                                <button class="btn-reject" onclick="updateStatus(${app.application_id}, 'rejected')">Reject</button>
+                            `;
+                        } else if (app.status === 'accepted') {
+                            if (app.task_file_url) {
+                                if (app.marks !== null && app.marks !== undefined) {
+                                    actionHTML = `<span style="color: #28a745; font-weight: bold;">Graded: ${app.marks}/100</span>`;
+                                } else {
+                                    actionHTML = `
+                                        <a href="${app.task_file_url}" target="_blank" style="font-size: 12px; color: #4e73df; text-decoration: none; margin-right: 15px; font-weight: bold;">📄 View Work</a>
+                                        <input type="number" id="marks-${app.application_id}" placeholder="Marks" style="width: 70px; padding: 5px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                                        <input type="text" id="feedback-${app.application_id}" placeholder="Feedback..." style="width: 120px; padding: 5px; margin-right: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                                        <button class="btn-accept" onclick="evaluateTask(${app.application_id})">Save Grade</button>
+                                    `;
+                                }
+                            } else {
+                                actionHTML = `<span style="font-size: 12px; color: #888;">Waiting for student submission...</span>`;
+                            }
+                        } else {
+                            actionHTML = `<span style="font-size: 12px; color: #888;">Application Rejected</span>`;
+                        }
 
                         const html = `
                             <div class="applicant-row">
@@ -123,9 +146,8 @@
                                     <span class="status-badge ${statusClass}" style="margin-left: 10px;">${app.status}</span><br>
                                     <span style="font-size: 13px; color: #666;">Req: ${app.language_req} | Level: ${app.experience_level}</span>
                                 </div>
-                                <div class="action-btns">
-                                    <button class="btn-accept" onclick="updateStatus(${app.application_id}, 'accepted')">Accept</button>
-                                    <button class="btn-reject" onclick="updateStatus(${app.application_id}, 'rejected')">Reject</button>
+                                <div class="action-btns" style="display: flex; align-items: center;">
+                                    ${actionHTML}
                                 </div>
                             </div>
                         `;
@@ -163,7 +185,6 @@
             }
         }
 
-        // --- UPDATE APPLICATION STATUS ---
         async function updateStatus(appId, newStatus) {
             const token = localStorage.getItem('token');
             try {
@@ -176,18 +197,44 @@
                     body: JSON.stringify({ status: newStatus })
                 });
 
+                if (response.ok) fetchApplicants(); 
+                else alert("Failed to update status.");
+            } catch (error) {
+                alert("Could not connect to server.");
+            }
+        }
+
+        async function evaluateTask(appId) {
+            const marks = document.getElementById(`marks-${appId}`).value;
+            const feedback = document.getElementById(`feedback-${appId}`).value;
+            const token = localStorage.getItem('token');
+
+            if (!marks || !feedback) {
+                alert("Please enter both marks and feedback.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/evaluate/${appId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ marks, feedback })
+                });
+
                 if (response.ok) {
-                    // Refresh the list to show the new status badge
+                    alert("Grade saved successfully!");
                     fetchApplicants(); 
                 } else {
-                    alert("Failed to update status.");
+                    alert("Failed to save grade.");
                 }
             } catch (error) {
                 alert("Could not connect to server.");
             }
         }
 
-        // Chart.js
         const ctx = document.getElementById('progressChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
