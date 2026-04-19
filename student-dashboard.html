@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <title>Student Panel</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* A simple class to hide elements */
+        .hidden { display: none !important; }
+        
+        /* Layout for the filters bar */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-bar select { margin: 0; width: auto; flex: 1; }
+        .filter-bar button { margin: 0; width: auto; padding: 10px 20px; }
+        
+        /* Make the 3 cards fit nicely */
+        .dashboard-content { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    </style>
 </head>
 <body>
     <div class="navbar">
@@ -11,17 +28,66 @@
         <button onclick="logout()">Logout</button>
     </div>
 
-    <div class="dashboard-content">
+    <div id="main-view" class="dashboard-content">
         <div class="card">
             <h3>Available Internships</h3>
             <p>Browse and apply for opportunities.</p>
-            <button>View Internships</button>
+            <button onclick="toggleView('search-view')">View Internships</button>
         </div>
+        
+        <div class="card">
+            <h3>My Applications</h3>
+            <p>Track your submitted internships, status, and feedback.</p>
+            <ul style="text-align: left; padding-left: 20px; color: #555;">
+                <li>Backend Dev Intern - <b>In Review</b></li>
+                <li>Database Admin - <b>Selected</b> (Feedback: Good SQL skills)</li>
+            </ul>
+            <button>View Full History</button>
+        </div>
+
         <div class="card">
             <h3>My Tasks</h3>
             <p>Upload your task files here.</p>
             <input type="file" id="taskFile">
             <button onclick="uploadTask()">Submit Work</button>
+        </div>
+    </div>
+
+    <div id="search-view" class="dashboard-content hidden">
+        <div class="card" style="grid-column: 1 / -1;">
+            <button onclick="toggleView('main-view')" style="width: auto; margin-bottom: 15px; background: #888;">&larr; Back to Dashboard</button>
+            
+            <h3>Find Internships</h3>
+            
+            <div class="filter-bar">
+                <select id="language-filter">
+                    <option value="all">Any Language</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="c">C</option>
+                    <option value="sql">SQL</option>
+                </select>
+                
+                <select id="experience-filter">
+                    <option value="all">Any Experience Level</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+                
+                <select id="age-filter">
+                    <option value="all">Any Age Group</option>
+                    <option value="under18">Under 18</option>
+                    <option value="18-22">18 - 22</option>
+                    <option value="23plus">23+</option>
+                </select>
+                
+                <button onclick="applyFilters()">Search</button>
+            </div>
+
+            <div id="internship-results" style="padding: 20px; border: 1px dashed #ccc; border-radius: 5px;">
+                <p>Internship listings will populate here...</p>
+            </div>
         </div>
     </div>
 
@@ -34,7 +100,23 @@
         }
         
         function uploadTask() {
-            alert("Firebase Storage feature will go here! Make sure to set up Firebase Storage rules.");
+            alert("File upload system will be connected here!");
+        }
+
+        // Toggles between the main dashboard and the search view
+        function toggleView(viewId) {
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('search-view').classList.add('hidden');
+            
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        // Mock function for when the user clicks 'Search'
+        function applyFilters() {
+            const lang = document.getElementById('language-filter').value;
+            const exp = document.getElementById('experience-filter').value;
+            alert(`Filtering database for: Language=${lang}, Experience=${exp}`);
+            // Later, you will query your MySQL/Node backend here and inject the HTML results
         }
     </script>
 </body>
